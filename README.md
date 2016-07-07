@@ -1,6 +1,7 @@
 # Logstash Plugin
 
-[![Travis Build Status](https://travis-ci.org/logstash-plugins/logstash-output-gelf.svg)](https://travis-ci.org/logstash-plugins/logstash-output-gelf)
+[![Build
+Status](http://build-eu-00.elastic.co/view/LS%20Plugins/view/LS%20Outputs/job/logstash-plugin-output-gelf-unit/badge/icon)](http://build-eu-00.elastic.co/view/LS%20Plugins/view/LS%20Outputs/job/logstash-plugin-output-gelf-unit/)
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash).
 
@@ -55,12 +56,7 @@ gem "logstash-filter-awesome", :path => "/your/local/logstash-filter-awesome"
 ```
 - Install plugin
 ```sh
-# Logstash 2.3 and higher
-bin/logstash-plugin install --no-verify
-
-# Prior to Logstash 2.3
 bin/plugin install --no-verify
-
 ```
 - Run Logstash with your plugin
 ```sh
@@ -78,12 +74,7 @@ gem build logstash-filter-awesome.gemspec
 ```
 - Install the plugin from the Logstash home
 ```sh
-# Logstash 2.3 and higher
-bin/logstash-plugin install --no-verify
-
-# Prior to Logstash 2.3
-bin/plugin install --no-verify
-
+bin/plugin install /your/local/plugin/logstash-filter-awesome.gem
 ```
 - Start Logstash and proceed to test the plugin
 

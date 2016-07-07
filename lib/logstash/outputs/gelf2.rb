@@ -6,15 +6,17 @@ require "logstash/outputs/base"
 # want to use Logstash to output events to Graylog2.
 #
 # More information at http://graylog2.org/gelf#specs[The Graylog2 GELF specs page]
-class LogStash::Outputs::Gelf < LogStash::Outputs::Base
+class LogStash::Outputs::Gelf2 < LogStash::Outputs::Base
 
-  config_name "gelf"
+  config_name "gelf2"
 
   # Graylog2 server IP address or hostname.
   config :host, :validate => :string, :required => true
 
   # Graylog2 server port number.
   config :port, :validate => :number, :default => 12201
+
+  config :protocol, :validate => :string, :default => "udp"
 
   # The GELF chunksize. You usually don't need to change this.
   config :chunksize, :validate => :number, :default => 1420
@@ -37,6 +39,22 @@ class LogStash::Outputs::Gelf < LogStash::Outputs::Base
   # are accepted: "emergency", "alert", "critical",  "warning", "notice", and
   # "informational".
   config :level, :validate => :array, :default => [ "%{severity}", "INFO" ]
+
+  # The GELF facility. Dynamic values like `%{foo}` are permitted here; this
+  # is useful if you need to use a value from the event as the facility name.
+  # Should now be sent as an underscored "additional field" (e.g. `\_facility`)
+  config :facility, :validate => :string, :deprecated => true
+
+  # The GELF line number; this is usually the line number in your program where
+  # the log event originated. Dynamic values like `%{foo}` are permitted here, but the
+  # value should be a number.
+  # Should now be sent as an underscored "additional field" (e.g. `\_line`).
+  config :line, :validate => :string, :deprecated => true
+
+  # The GELF file; this is usually the source code file in your program where
+  # the log event originated. Dynamic values like `%{foo}` are permitted here.
+  # Should now be sent as an underscored "additional field" (e.g. `\_file`).
+  config :file, :validate => :string, :deprecated => true
 
   # Should Logstash ship metadata within event object? This will cause Logstash
   # to ship any fields in the event (such as those created by grok) in the GELF
@@ -80,7 +98,11 @@ class LogStash::Outputs::Gelf < LogStash::Outputs::Base
     option_hash = Hash.new
 
     #@gelf = GELF::Notifier.new(@host, @port, @chunksize, option_hash)
-    @gelf ||= GELF::Notifier.new(@host, @port, @chunksize)
+    if @protocol == 'tcp'
+      @gelf ||= GELF::Notifier.new(@host, @port, "LAN", { :protocol => GELF::Protocol::TCP })
+    else
+      @gelf ||= GELF::Notifier.new(@host, @port, @chunksize)
+    end
 
     # This sets the 'log level' of gelf; since we're forwarding messages, we'll
     # want to forward *all* messages, so set level to 0 so all messages get
@@ -124,9 +146,9 @@ class LogStash::Outputs::Gelf < LogStash::Outputs::Base
     # with a specific format.
     m = Hash.new
 
-    m["short_message"] = event.get("message")
-    if event.get(@short_message)
-      v = event.get(@short_message)
+    m["short_message"] = event["message"]
+    if event[@short_message]
+      v = event[@short_message]
       short_message = (v.is_a?(Array) && v.length == 1) ? v.first : v
       short_message = short_message.to_s
       if !short_message.empty?
@@ -137,6 +159,12 @@ class LogStash::Outputs::Gelf < LogStash::Outputs::Base
     m["full_message"] = event.sprintf(@full_message)
 
     m["host"] = event.sprintf(@sender)
+
+    # deprecated fields
+    m["facility"] = event.sprintf(@facility) if @facility
+    m["file"] = event.sprintf(@file) if @file
+    m["line"] = event.sprintf(@line) if @line
+    m["line"] = m["line"].to_i if m["line"].is_a?(String) and m["line"] === /^[\d]+$/
 
     if @ship_metadata
       event.to_hash.each do |name, value|
@@ -163,7 +191,7 @@ class LogStash::Outputs::Gelf < LogStash::Outputs::Base
     end
 
     if @ship_tags
-      m["_tags"] = event.get("tags").join(', ') if event.get("tags")
+      m["_tags"] = event["tags"].join(', ') if event["tags"]
     end
 
     if @custom_fields

@@ -2,7 +2,7 @@
 require_relative "../spec_helper"
 require "gelf"
 
-describe LogStash::Outputs::Gelf do
+describe LogStash::Outputs::Gelf2 do
 
   let(:host) { "localhost" }
   let(:port) { rand(1024..65535) }
@@ -14,7 +14,7 @@ describe LogStash::Outputs::Gelf do
 
   describe "#send" do
 
-    subject { LogStash::Outputs::Gelf.new("host" => host, "port" => port ) }
+    subject { LogStash::Outputs::Gelf2.new("host" => host, "port" => port ) }
 
     let(:properties) { { "message" => "This is a message!"} }
     let(:event)      { LogStash::Event.new(properties) }
